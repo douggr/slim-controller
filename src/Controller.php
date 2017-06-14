@@ -113,7 +113,7 @@ abstract class Controller
      *
      * @param string $controller controllers to map
      */
-    final public function map(/* string */ ...$controller)
+    final public static function map(/* string */ ...$controller)
     {
         if (!self::$app) {
             throw new RuntimeException(
