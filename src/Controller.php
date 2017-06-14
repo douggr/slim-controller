@@ -195,7 +195,7 @@ abstract class Controller
         $controller = strtolower(str_replace('\\', '/', static::class));
 
         /** @var string $endpoint */
-        $endpoint = static::endpoint ?: $controller;
+        $endpoint = trim(static::endpoint ?: $controller, '/');
 
         // calls `__invoke` as the unique handler
         if (!static::routes) {
@@ -207,7 +207,8 @@ abstract class Controller
             $methods = $mapping['methods'];
 
             /** @var string $route */
-            $route = rtrim("/{$endpoint}{$mapping['route']}", '/');
+            $route = rtrim("/{$endpoint}{$mapping['route']}", '/') ?: '/';
+            $route = preg_replace('@/+@', '/', $route);
 
             /** @var Slim\Route $mapper */
             $mapper = $app->map($methods, $route, static::class);
