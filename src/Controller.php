@@ -192,10 +192,11 @@ abstract class Controller
         $app = self::$app;
 
         /** @var string $controller */
-        $controller = strtolower(str_replace('\\', '/', static::class));
+        $controller = strtolower(str_replace(['\\'], ['/'], static::class));
 
         /** @var string $endpoint */
         $endpoint = trim(static::endpoint ?: $controller, '/');
+        $endpoint = preg_replace('@^(controller|modules?)/@', '', $endpoint);
 
         // calls `__invoke` as the unique handler
         if (!static::routes) {
