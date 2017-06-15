@@ -15,12 +15,21 @@ use Slim\Http\Environment;
 use Slim\Http\Request;
 use Slim\Http\Response;
 
-class ExampleExt extends \Example {
+/**
+ * @codingStandardsIgnoreStart
+ *
+ * because we declare 2 classes in the same
+ * file: PSR1.Classes.ClassDeclaration.MultipleClasses
+ */
+class ExampleExt extends \Example
+{
     const endpoint = '/';
 }
 
 class ControllerTest extends TestCase
 {
+    // @codingStandardsIgnoreEnd
+
     /**
      * Process the application given a request method and URI.
      *
@@ -79,7 +88,6 @@ class ControllerTest extends TestCase
         $this->assertContains('application/json', $response->getHeader('content-type')[0]);
         $this->assertEquals('["a","b"]', (string) $response->getBody());
     }
-
 
     /**
      * Test that the controller returns a rendered response containing the
