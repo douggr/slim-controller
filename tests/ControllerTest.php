@@ -4,7 +4,7 @@
  * Owlsome solutions. Owltstanding results.
  */
 
-namespace Tests;
+namespace DL2\Slim\Tests;
 
 require_once __DIR__ . '/../example/controllers/Example.php';
 
@@ -14,6 +14,10 @@ use Slim\App;
 use Slim\Http\Environment;
 use Slim\Http\Request;
 use Slim\Http\Response;
+
+class ExampleExt extends \Example {
+    const endpoint = '/';
+}
 
 class ControllerTest extends TestCase
 {
@@ -53,12 +57,29 @@ class ControllerTest extends TestCase
         // map routes in `Example`
         Controller::map('Example');
 
+        // map routes in `ExampleExt`
+        Controller::map('DL2\Slim\Tests\ExampleExt');
+
         // Process the application
         $response = $app->process($request, $response);
 
         // Return the response
         return $response;
     }
+
+    /**
+     * Test that the controller returns the correct response with named
+     * endpoints.
+     */
+    public function testIndexExt()
+    {
+        $response = $this->runApp('POST', '/', ['a', 'b']);
+
+        $this->assertEquals(201, $response->getStatusCode());
+        $this->assertContains('application/json', $response->getHeader('content-type')[0]);
+        $this->assertEquals('["a","b"]', (string) $response->getBody());
+    }
+
 
     /**
      * Test that the controller returns a rendered response containing the

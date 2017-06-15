@@ -55,8 +55,8 @@ class Example extends Controller
      *
      * @return Psr\Http\Message\ResponseInterface
      */
-    public function post(ServerRequestInterface $request, ResponseInterface $response, array $args)
+    public function create(ServerRequestInterface $request, ResponseInterface $response, array $args)
     {
-        return $response;
+        return $response->withJson($request->getParsedBody(), 201);
     }
 }
