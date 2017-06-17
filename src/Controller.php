@@ -186,7 +186,7 @@ abstract class Controller
     /**
      * Map all routes which would use this Controller as handler.
      */
-    private static function route()
+    protected static function route()
     {
         /** @var Slim\App $app */
         $app = self::$app;

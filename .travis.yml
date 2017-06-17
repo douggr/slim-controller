@@ -4,17 +4,23 @@ language: php
 php:
   - 7.0
   - 7.1
+  - hhvm
   - nightly
 
 matrix:
-    allow_failures:
-      - php: nightly
+  allow_failures:
+    - php: hhvm
+    - php: nightly
 
-before_script:
-  - composer install
+  fast_finish: true
 
 script:
-  - composer run test
+  - composer install --prefer-dist --no-interaction
+  - composer test
+
+cache:
+  directories:
+    - $HOME/.composer/cache
 
 notifications:
   email: false
