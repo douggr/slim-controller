@@ -4,6 +4,8 @@
  * Owlsome solutions. Owltstanding results.
  */
 
+namespace Controllers;
+
 use DL2\Slim\Controller;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -15,6 +17,13 @@ use Slim\Views\PhpRenderer;
 class Example extends Controller
 {
     /**
+     * Fake DB data.
+     *
+     * @var stdClass[]
+     */
+    private $db;
+
+    /**
      * Used for retrieving resources. Handle `GET` requests
      * with an `ID` parameter.
      *
@@ -24,7 +33,7 @@ class Example extends Controller
      *
      * @return Psr\Http\Message\ResponseInterface
      */
-    public function get(ServerRequestInterface $request, ResponseInterface $response, array $args)
+    public function getAction(ServerRequestInterface $request, ResponseInterface $response, array $args) // @codingStandardsIgnoreLine
     {
         return $response->withJson($args);
     }
@@ -39,11 +48,21 @@ class Example extends Controller
      *
      * @return Psr\Http\Message\ResponseInterface
      */
-    public function index(ServerRequestInterface $request, ResponseInterface $response, array $args)
+    public function indexAction(ServerRequestInterface $request, ResponseInterface $response, array $args) // @codingStandardsIgnoreLine
     {
-        $this->container['renderer'] = new PhpRenderer(__DIR__ . '/../templates');
+        if (null !== $request->getParam('json')) {
+            return $response->withJson($this->db);
+        }
 
-        return $this->render();
+        /** @var string $path */
+        $path = realpath(__DIR__ . '/../templates');
+
+        /* @var Slim\Views\PhpRenderer $renderer */
+        $this->container['renderer'] = new PhpRenderer($path);
+
+        return $this->render([
+            'data'  => $this->db,
+        ]);
     }
 
     /**
@@ -55,8 +74,20 @@ class Example extends Controller
      *
      * @return Psr\Http\Message\ResponseInterface
      */
-    public function create(ServerRequestInterface $request, ResponseInterface $response, array $args)
+    public function createAction(ServerRequestInterface $request, ResponseInterface $response, array $args) // @codingStandardsIgnoreLine
     {
         return $response->withJson($request->getParsedBody(), 201);
+    }
+
+    /**
+     * Setup up a fake DB.
+     */
+    protected function init()
+    {
+        /** @var string $data */
+        $data = file_get_contents(__DIR__ . '/data.json');
+
+        /* @var stdClass $db */
+        $this->db = json_decode($data)->data;
     }
 }

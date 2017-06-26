@@ -23,18 +23,27 @@ use Slim\Exception\NotFoundException;
 abstract class Controller
 {
     /** @var string */
-    const endpoint = null;
+    const ENDPOINT = null;
 
     /** @var array */
-    const routes = [
+    const ROUTES = [
+        // @codingStandardsIgnoreStart
+        // because {id} is added later, any static route MUST become
+        // before routes with arguments
         ['action' => 'create',  'methods' => ['post'],         'route' => '/'],
-        ['action' => 'destroy', 'methods' => ['delete'],       'route' => '/{id:[0-9]+}'],
-        ['action' => 'edit',    'methods' => ['get'],          'route' => '/{id:[0-9]+}/edit'],
-        ['action' => 'get',     'methods' => ['get'],          'route' => '/{id:[0-9]+}'],
         ['action' => 'index',   'methods' => ['get'],          'route' => '/'],
         ['action' => 'new',     'methods' => ['get'],          'route' => '/new'],
-        ['action' => 'update',  'methods' => ['patch', 'put'], 'route' => '/{id:[0-9]+}'],
+
+        // route with arguments
+        ['action' => 'destroy', 'methods' => ['delete'],       'route' => '/{id}'],
+        ['action' => 'edit',    'methods' => ['get'],          'route' => '/{id}/edit'],
+        ['action' => 'get',     'methods' => ['get'],          'route' => '/{id}'],
+        ['action' => 'update',  'methods' => ['patch', 'put'], 'route' => '/{id}'],
+        // @codingStandardsIgnoreEnd
     ];
+
+    /** @var string */
+    const SUFFIX = 'Action';
 
     /**
      * @var string
@@ -58,9 +67,12 @@ abstract class Controller
      *
      * @internal
      */
-    final public function __construct(ContainerInterface $container)
+    public function __construct(ContainerInterface $container)
     {
+        /* @var Interop\Container\ContainerInterface $container */
         $this->container = $container;
+
+        $this->init();
     }
 
     /**
@@ -72,14 +84,18 @@ abstract class Controller
      *
      * @internal
      */
-    public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args)
+    public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args) // @codingStandardsIgnoreLine
     {
+        /** @var string $route */
+        $route = $request->getAttribute('route')->getName();
+
         /** @var string $action */
-        $action         = $request->getAttribute('route')->getName() ?: $request->getMethod();
-        $this->action   = strtolower($action);
+        $action = $route ?: $request->getMethod();
+
+        $this->action = strtolower($action);
 
         /** @var string $callback */
-        $callback = preg_replace('/.+\./', '', $this->action);
+        $callback = $this->getCallbackName();
 
         if (method_exists($this, $callback)) {
             return call_user_func_array([$this, $callback], [
@@ -103,7 +119,7 @@ abstract class Controller
      *
      * @return Slim\App
      */
-    final public static function init(App $app)
+    public static function bootstrap(App $app)
     {
         return self::$app = $app;
     }
@@ -113,11 +129,11 @@ abstract class Controller
      *
      * @param string $controller controllers to map
      */
-    final public static function map(/* string */ ...$controller)
+    public static function map(/* string */ ...$controller)
     {
         if (!self::$app) {
             throw new RuntimeException(
-                'You must init the `Slim\App` using `DL2\Slim\Controller::init(Slim\App)`'
+                'You must init the `Slim\App` using `DL2\Slim\Controller::init(Slim\App)`' // @codingStandardsIgnoreLine
             );
         }
 
@@ -127,23 +143,46 @@ abstract class Controller
     }
 
     /**
+     * Format the action callback name.
+     *
+     * @return string
+     */
+    protected function getCallbackName()
+    {
+        return preg_replace('/.+\./', '', $this->action) . static::SUFFIX;
+    }
+
+    /**
      * Returns the $app used by the controller container.
      *
      * @return Slim\App
      */
-    final protected function app()
+    protected function app()
     {
         return self::$app;
     }
 
     /**
-     * Output the rendered template and returns the current ResponseInterface.
+     * Subclasses can override this to do any additional setup work that
+     * would be considered part of `{@link __construct}`.
+     *
+     * Essentially, it is a hook into the parent constructor before the
+     * controller is initialized.
+     */
+    protected function init()
+    {
+    }
+
+    /**
+     * Output the rendered template and returns the current
+     * ResponseInterface.
      *
      * @param array $data associative array of template variables
-     * @param string $template template pathname relative to templates directory
+     * @param string $template template pathname relative to
+     *      templates directory
      *
-     * @throws Slim\Exception\ContainerValueNotFoundException if the renderer
-     *      is not defined
+     * @throws Slim\Exception\ContainerValueNotFoundException if the
+     *      renderer is not defined
      *
      * @return Psr\Http\Message\ResponseInterface
      */
@@ -152,35 +191,15 @@ abstract class Controller
         /** @var Slim\Views\PhpRenderer $renderer */
         $renderer = $this->container->get('renderer');
 
+        /** @var Psr\Http\Message\ResponseInterface $response */
+        $response = $this->container->get('response');
+
         if (!$template) {
             /** @var string $template */
             $template = str_replace('.', '/', $this->action) . '.phtml';
         }
 
-        return $renderer->render($this->container->get('response'), $template, $data);
-    }
-
-    /**
-     * Forward to another action.
-     *
-     * @param string $action action to forward to
-     * @param array $args
-     *
-     * @return Psr\Http\Message\ResponseInterface
-     */
-    protected function forward($action, array $args = [])
-    {
-        /** @var Slim\Http\Request $request */
-        $request = $this->container->get('request');
-
-        /** @var Slim\Http\Response $response */
-        $response = $this->container->get('response');
-
-        return call_user_func_array([$this, $this->action = $action], [
-            /* 0: ServerRequestInterface    */ $request,
-            /* 1: ResponseInterface         */ $response,
-            /* 2: array                     */ $args,
-        ]);
+        return $renderer->render($response, $template, $data);
     }
 
     /**
@@ -195,15 +214,15 @@ abstract class Controller
         $controller = strtolower(str_replace(['\\'], ['/'], static::class));
 
         /** @var string $endpoint */
-        $endpoint = trim(static::endpoint ?: $controller, '/');
-        $endpoint = preg_replace('@^(controller|modules?)/@', '', $endpoint);
+        $endpoint = trim(static::ENDPOINT ?: $controller, '/');
+        $endpoint = preg_replace('@^(controllers?|modules?)/@', '', $endpoint);
 
         // calls `__invoke` as the unique handler
-        if (!static::routes) {
+        if (!static::ROUTES) {
             return $app->any("/{$endpoint}[/{id}]", static::class);
         }
 
-        foreach (static::routes as /* array */ $mapping) {
+        foreach (static::ROUTES as /* array */ $mapping) {
             /** @var array $methods */
             $methods = $mapping['methods'];
 
@@ -215,6 +234,9 @@ abstract class Controller
             $mapper = $app->map($methods, $route, static::class);
 
             if (isset($mapping['action']) && $mapping['action']) {
+                /** @var string $controller */
+                $controller = preg_replace('@.+/@', '', $controller);
+
                 $mapper->setName("{$controller}.{$mapping['action']}");
             }
         }

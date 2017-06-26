@@ -25,10 +25,73 @@
       sup {
         color: #888;
       }
+
+      dl {
+        margin: 0;
+      }
+
+      dt {
+        color: rgba(0, 0, 0, .87);
+        margin-top: 1vh;
+      }
+
+      figure {
+        display: flex;
+        align-items: stretch;
+      }
+
+      figure img {
+        justify-content: flex-start;
+        margin-right: 2vw;
+        height: 100%;
+      }
+
+      figcaption {
+        justify-content: flex-end;
+        margin: 0;
+      }
     </style>
   </head>
   <body>
-    <h1>DL2 / Slim Controller <sup>1.0</sup></h1>
-    <h2>Action Controllers made easy!</h2>
-  </body>
-</html>
+    <header>
+      <h1>DL2 / Slim Controller <sup>1.0</sup></h1>
+      <h2>Action Controllers made easy!</h2>
+      <hr>
+    </header>
+
+    <section id="data">
+      <?php foreach ($data as $record): ?>
+        <figure>
+          <img src="<?= $record->picture->medium ?>" alt="<?= htmlentities($record->name->first) ?>'s avatar" style="float:left">
+          <figcaption>
+            <dl>
+              <dt style="font-weight: bold; font-size: 1.25rem">
+                <?= htmlentities("{$record->name->title}. {$record->name->first} {$record->name->last}") ?>
+              </dt>
+              <dd>
+                <a href="example/<?= $record->email ?>">Edit</a>
+              </dd>
+
+              <dt>Phone:</dt>
+              <dd>
+                <?= trim(preg_replace('/\D+/', ' ', $record->cell)) ?><br>
+                <?= trim(preg_replace('/\D+/', ' ', $record->phone)) ?><br>
+              </dd>
+
+              <dt>Email:</dt>
+              <dd><?= $record->email ?></dd>
+            </dl>
+          </figcaption>
+        </figure>
+        <hr>
+      <?php endforeach ?>
+    </section>
+
+    <script src="http://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script>
+      // $('a').on('click', function(event) {
+      //   event.preventDefault();
+      //
+      //   var $this = $(this);
+      // });
+    </script>

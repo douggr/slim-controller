@@ -6,34 +6,28 @@
   <file>src</file>
   <file>tests</file>
 
-  <arg value="p" />
   <arg name="colors" />
+  <arg value="p" />
 
   <config name="ignore_warnings_on_exit" value="1" />
 
-  <rule ref="PSR1">
-    <exclude name="Generic.NamingConventions.UpperCaseConstantName.ClassConstantNotUpperCase" />
-    <exclude name="PSR1.Classes.ClassDeclaration.MissingNamespace" />
-  </rule>
-
-  <rule ref="PSR2">
-    <exclude name="PSR2.Classes.PropertyDeclaration.Underscore" />
-    <exclude name="PSR2.Methods.MethodDeclaration.Underscore" />
-  </rule>
-
-  <rule ref="Zend">
-    <exclude name="PEAR.Functions.FunctionCallSignature.CloseBracketLine" />
-    <exclude name="PEAR.Functions.FunctionCallSignature.ContentAfterOpenBracket" />
-    <exclude name="Zend.NamingConventions.ValidVariableName.PrivateNoUnderscore" />
-    <exclude name="Zend.NamingConventions.ValidVariableName.PrivateNoUnderscore" />
-  </rule>
+  <rule ref="PSR1" />
+  <rule ref="PSR2" />
 
   <rule ref="Generic.Files.LineLength">
     <properties>
-      <property name="lineLimit" value="75" />
-      <property name="absoluteLineLimit" value="120" />
+      <property name="lineLimit" value="80" />
+      <property name="absoluteLineLimit" value="100" />
     </properties>
   </rule>
 
   <rule ref="Generic.Arrays.DisallowLongArraySyntax" />
+
+  <rule ref="PSR2.Classes.PropertyDeclaration.Underscore">
+    <type>error</type>
+  </rule>
+
+  <rule ref="PSR2.Methods.MethodDeclaration.Underscore">
+    <type>error</type>
+  </rule>
 </ruleset>

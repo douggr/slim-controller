@@ -25,3 +25,8 @@ Just run `composer run test`.
 
 The Slim Controller extension is licensed under the MIT license.
 See [License File](LICENSE.md) for more information.
+
+#### Data in [Example](example/controllers/data.json)
+
+All randomly generated data for the example were picked from
+the [Random User Generator API](https://randomuser.me).
