@@ -8,16 +8,17 @@ require __DIR__ . '/../vendor/autoload.php';
 require __DIR__ . '/controllers/Example.php';
 
 use Controllers\Example;
+use DL2\Slim\Controller as FrontController;
 
 /*
  * Instantiate a Slim application by bootstraping our FronController.
  */
-$app = DL2\Slim\Controller::bootstrap(new Slim\App());
+$app = FrontController::bootstrap();
 
 /*
  * Define the Slim application routes
  */
-DL2\Slim\Controller::map(Example::class);
+FrontController::map(Example::class);
 
 /*
  * Run the Slim application

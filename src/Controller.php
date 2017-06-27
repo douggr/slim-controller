@@ -33,7 +33,7 @@ abstract class Controller
         ['action' => 'index',   'methods' => ['get'],          'route' => '/'],
         ['action' => 'new',     'methods' => ['get'],          'route' => '/new'],
 
-        // route with arguments
+        // and finally we define routes with arguments
         ['action' => 'destroy', 'methods' => ['delete'],       'route' => '/{id}'],
         ['action' => 'edit',    'methods' => ['get'],          'route' => '/{id}/edit'],
         ['action' => 'get',     'methods' => ['get'],          'route' => '/{id}'],
@@ -113,13 +113,56 @@ abstract class Controller
     /**
      * Configure a Slim\App to use within this controller.
      *
-     * @param Slim\App
+     * @param array $config an associative array of app settings as follow:
+     *      - addContentLengthHeader: When true, Slim will add a
+     *          Content-Length header to the response. If you are using a
+     *          runtime analytics tool, such as New Relic, then this
+     *          should be disabled.
+     *      - bootstrap: A file to load right after the App is instantiated
+     *      - determineRouteBeforeAppMiddleware: When true, the route is
+     *          calculated before any middleware is executed. This means
+     *          that you can inspect route parameters in middleware if you
+     *          need to.
+     *      - displayErrorDetails: When true, additional information about
+     *          exceptions are displayed by the default error handler.
+     *      - httpVersion: The protocol version used by the Response object.
+     *      - responseChunkSize: Size of each chunk read from the `Response`
+     *          body when sending to the browser.
+     *      - outputBuffering: If false, then no output buffering is
+     *          enabled. If 'append' or 'prepend', then any echo or print
+     *          statements are captured and are either appended or prepended
+     *          to the Response returned from the route callable.
+     *      - routerCacheFile: Filename for caching the FastRoute routes.
+     *          Must be set to to a valid filename within a writeable
+     *          directory. If the file does not exist, then it is
+     *          created with the correct cache information on first run.
      *
      * @return Slim\App
      */
-    public static function bootstrap(App $app)
+    public static function bootstrap(array $config = [])
     {
-        return self::$app = $app;
+        $config = array_replace([
+            'addContentLengthHeader'            => true,
+            'bootstrap'                         => null,
+            'determineRouteBeforeAppMiddleware' => false,
+            'displayErrorDetails'               => false,
+            'httpVersion'                       => '1.1',
+            'outputBuffering'                   => 'append',
+            'responseChunkSize'                 => 4096,
+            'routerCacheFile'                   => false,
+        ], $config);
+
+        /* @var Slim\App */
+        self::$app = new App($config);
+
+        /** @var string $bootstrap */
+        $bootstrap = $config['bootstrap'];
+
+        if (isset($bootstrap) && file_exists($bootstrap)) {
+            require_once $bootstrap;
+        }
+
+        return self::$app;
     }
 
     /**
