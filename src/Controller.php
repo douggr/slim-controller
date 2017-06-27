@@ -26,9 +26,8 @@ abstract class Controller
     const ENDPOINT = null;
 
     /** @var array */
-    const ROUTES = [
-        // @codingStandardsIgnoreStart
-        // because {id} is added later, any static route MUST become
+    const ROUTES = [ // @codingStandardsIgnoreStart
+        // because {id} is added later, any static route MUST be placed
         // before routes with arguments
         ['action' => 'create',  'methods' => ['post'],         'route' => '/'],
         ['action' => 'index',   'methods' => ['get'],          'route' => '/'],
@@ -39,8 +38,7 @@ abstract class Controller
         ['action' => 'edit',    'methods' => ['get'],          'route' => '/{id}/edit'],
         ['action' => 'get',     'methods' => ['get'],          'route' => '/{id}'],
         ['action' => 'update',  'methods' => ['patch', 'put'], 'route' => '/{id}'],
-        // @codingStandardsIgnoreEnd
-    ];
+    ]; // @codingStandardsIgnoreEnd
 
     /** @var string */
     const SUFFIX = 'Action';
