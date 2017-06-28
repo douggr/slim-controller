@@ -82,7 +82,7 @@ abstract class Controller
      *
      * @internal
      */
-    public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args) // @codingStandardsIgnoreLine
+    final public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args) // @codingStandardsIgnoreLine
     {
         /** @var string $route */
         $route = $request->getAttribute('route')->getName();
@@ -174,7 +174,7 @@ abstract class Controller
     {
         if (!self::$app) {
             throw new RuntimeException(
-                'You must init the `Slim\App` using `DL2\Slim\Controller::init(Slim\App)`' // @codingStandardsIgnoreLine
+                'You must init the `Slim\App` using `DL2\Slim\Controller::bootstrap(Slim\App)`' // @codingStandardsIgnoreLine
             );
         }
 
@@ -227,7 +227,7 @@ abstract class Controller
      *
      * @return Psr\Http\Message\ResponseInterface
      */
-    protected function render(array $data = [], /*string*/ $template = '')
+    protected function render(array $data = [], $template = '')
     {
         /** @var Slim\Views\PhpRenderer $renderer */
         $renderer = $this->container->get('renderer');
@@ -236,11 +236,10 @@ abstract class Controller
         $response = $this->container->get('response');
 
         if (!$template) {
-            /** @var string $template */
-            $template = str_replace('.', '/', $this->action) . '.phtml';
+            $template = str_replace('.', '/', explode('/', $this->action)[1]);
         }
 
-        return $renderer->render($response, $template, $data);
+        return $renderer->render($response, "{$template}.phtml", $data);
     }
 
     /**
@@ -256,12 +255,7 @@ abstract class Controller
 
         /** @var string $endpoint */
         $endpoint = trim(static::ENDPOINT ?: $controller, '/');
-        $endpoint = preg_replace('@^(controllers?|modules?)/@', '', $endpoint);
-
-        // calls `__invoke` as the unique handler
-        if (!static::ROUTES) {
-            return $app->any("/{$endpoint}[/{id}]", static::class);
-        }
+        $endpoint = preg_replace('@.+modules?/@', '', $endpoint);
 
         foreach (static::ROUTES as /* array */ $mapping) {
             /** @var array $methods */
@@ -274,11 +268,11 @@ abstract class Controller
             /** @var Slim\Route $mapper */
             $mapper = $app->map($methods, $route, static::class);
 
-            if (isset($mapping['action']) && $mapping['action']) {
-                /** @var string $controller */
-                $controller = preg_replace('@.+/@', '', $controller);
+            if (isset($mapping['action'])) {
+                /** @var string $module */
+                $module = preg_replace('@.+modules?/@', '', $controller);
 
-                $mapper->setName("{$controller}.{$mapping['action']}");
+                $mapper->setName("{$module}.{$mapping['action']}");
             }
         }
     }
