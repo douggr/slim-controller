@@ -4,7 +4,7 @@
  * Owlsome solutions. Owltstanding results.
  */
 
-namespace Controllers;
+namespace Modules\Example;
 
 use DL2\Slim\Controller;
 use Psr\Http\Message\ResponseInterface;
@@ -16,8 +16,9 @@ use stdClass;
 /**
  * Simple rest example. Note that `DELETE` is not allowed.
  */
-class Example extends Controller
+class Index extends Controller
 {
+    const ENDPOINT = '/example';
     /**
      * Fake DB data.
      *
@@ -97,7 +98,7 @@ class Example extends Controller
     public function indexAction(ServerRequestInterface $request, ResponseInterface $response, array $args) // @codingStandardsIgnoreLine
     {
         /** @var string $path */
-        $path = realpath(__DIR__ . '/../templates');
+        $path = realpath(__DIR__ . '/templates');
 
         /* @var Slim\Views\PhpRenderer $renderer */
         $this->container['renderer'] = new PhpRenderer($path);
@@ -140,7 +141,7 @@ class Example extends Controller
     protected function init()
     {
         /** @var stdClass[] $database */
-        $database = json_decode(file_get_contents(__DIR__ . '/data.json'));
+        $database = json_decode(file_get_contents(__DIR__ . '/../data.json'));
 
         foreach ($database as /* stdClass */ $record) {
             $this->database[$record->login->salt] = $record;

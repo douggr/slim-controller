@@ -141,9 +141,12 @@ abstract class Controller
      */
     public static function bootstrap(array $config = [])
     {
+        if (self::$app) {
+            return self::$app;
+        }
+
         $config = array_replace([
             'addContentLengthHeader'            => true,
-            'bootstrap'                         => null,
             'determineRouteBeforeAppMiddleware' => false,
             'displayErrorDetails'               => false,
             'httpVersion'                       => '1.1',
@@ -153,28 +156,19 @@ abstract class Controller
         ], $config);
 
         /* @var Slim\App */
-        self::$app = new App($config);
-
-        /** @var string $bootstrap */
-        $bootstrap = $config['bootstrap'];
-
-        if (isset($bootstrap) && file_exists($bootstrap)) {
-            require_once $bootstrap;
-        }
-
-        return self::$app;
+        return self::$app = new App($config);
     }
 
     /**
      * Map all given $controller within the $app.
      *
-     * @param string $controller controllers to map
+     * @param string[] $controller controllers to map
      */
-    public static function map(/* string */ ...$controller)
+    public static function map(...$controller)
     {
         if (!self::$app) {
             throw new RuntimeException(
-                'You must init the `Slim\App` using `DL2\Slim\Controller::bootstrap(Slim\App)`' // @codingStandardsIgnoreLine
+                'You must init the `Slim\App` using `DL2\Slim\Controller::bootstrap(array $config)`' // @codingStandardsIgnoreLine
             );
         }
 
@@ -236,7 +230,14 @@ abstract class Controller
         $response = $this->container->get('response');
 
         if (!$template) {
-            $template = str_replace('.', '/', explode('/', $this->action)[1]);
+            /** @var string[] $moduleSpec */
+            $moduleSpec = explode('/', str_replace('.', '/', $this->action));
+
+            // remove the module name
+            array_shift($moduleSpec);
+
+            /** @var string $template */
+            $template = implode('/', $moduleSpec);
         }
 
         return $renderer->render($response, "{$template}.phtml", $data);
@@ -253,11 +254,14 @@ abstract class Controller
         /** @var string $controller */
         $controller = strtolower(str_replace(['\\'], ['/'], static::class));
 
+        /** @var string $module */
+        $module = str_replace(['modules/', '/'], ['', '.'], $controller);
+
         /** @var string $endpoint */
         $endpoint = trim(static::ENDPOINT ?: $controller, '/');
         $endpoint = preg_replace('@.+modules?/@', '', $endpoint);
 
-        foreach (static::ROUTES as /* array */ $mapping) {
+        foreach (static::ROUTES as $mapping) {
             /** @var array $methods */
             $methods = $mapping['methods'];
 
@@ -269,9 +273,6 @@ abstract class Controller
             $mapper = $app->map($methods, $route, static::class);
 
             if (isset($mapping['action'])) {
-                /** @var string $module */
-                $module = preg_replace('@.+modules?/@', '', $controller);
-
                 $mapper->setName("{$module}.{$mapping['action']}");
             }
         }

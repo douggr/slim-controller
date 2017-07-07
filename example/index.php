@@ -5,20 +5,19 @@
  */
 
 require __DIR__ . '/../vendor/autoload.php';
-require __DIR__ . '/controllers/Example.php';
+require __DIR__ . '/modules/Example/Index.php';
 
-use Controllers\Example;
-use DL2\Slim\Controller as FrontController;
+use Modules\Example\Index;
 
 /*
  * Instantiate a Slim application by bootstraping our FronController.
  */
-$app = FrontController::bootstrap();
+$app = DL2\Slim\Controller::bootstrap();
 
 /*
  * Define the Slim application routes
  */
-FrontController::map(Example::class);
+DL2\Slim\Controller::map(Index::class);
 
 /*
  * Run the Slim application

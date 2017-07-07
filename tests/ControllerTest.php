@@ -6,10 +6,10 @@
 
 namespace DL2\Slim\Tests;
 
-require_once __DIR__ . '/../example/controllers/Example.php';
+require __DIR__ . '/../example/modules/Example/Index.php';
 
-use controllers\Example;
 use DL2\Slim\Controller;
+use Modules\Example\Index as Example;
 use PHPUnit\Framework\TestCase;
 use Slim\Http\Environment;
 use Slim\Http\Request;
