@@ -9,6 +9,7 @@ namespace DL2\Slim;
 use Interop\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use ReflectionClass;
 use RuntimeException;
 use Slim\App;
 use Slim\Exception\MethodNotAllowedException;
@@ -34,14 +35,11 @@ abstract class Controller
         ['action' => 'new',     'methods' => ['get'],          'route' => '/new'],
 
         // and finally we define routes with arguments
-        ['action' => 'destroy', 'methods' => ['delete'],       'route' => '/{id}'],
         ['action' => 'edit',    'methods' => ['get'],          'route' => '/{id}/edit'],
+        ['action' => 'destroy', 'methods' => ['delete'],       'route' => '/{id}'],
         ['action' => 'get',     'methods' => ['get'],          'route' => '/{id}'],
         ['action' => 'update',  'methods' => ['patch', 'put'], 'route' => '/{id}'],
     ]; // @codingStandardsIgnoreEnd
-
-    /** @var string */
-    const SUFFIX = 'Action';
 
     /**
      * @var string
@@ -87,13 +85,11 @@ abstract class Controller
         /** @var string $route */
         $route = $request->getAttribute('route')->getName();
 
-        /** @var string $action */
-        $action = $route ?: $request->getMethod();
-
-        $this->action = strtolower($action);
+        /* @var string $action */
+        $this->action = basename(strtolower($route ?? $request->getMethod()));
 
         /** @var string $callback */
-        $callback = $this->getCallbackName();
+        $callback = "{$this->action}Action";
 
         if (method_exists($this, $callback)) {
             return call_user_func_array([$this, $callback], [
@@ -155,8 +151,8 @@ abstract class Controller
             'routerCacheFile'                   => false,
         ], $config);
 
-        /* @var Slim\App */
-        return self::$app = new App($config);
+        /* @var Slim\App $app */
+        return self::$app = new App(['settings' => $config]);
     }
 
     /**
@@ -175,16 +171,6 @@ abstract class Controller
         while (list(, $class) = each($controller)) {
             $class::route();
         }
-    }
-
-    /**
-     * Format the action callback name.
-     *
-     * @return string
-     */
-    protected function getCallbackName()
-    {
-        return preg_replace('/.+\./', '', $this->action) . static::SUFFIX;
     }
 
     /**
@@ -223,22 +209,19 @@ abstract class Controller
      */
     protected function render(array $data = [], $template = '')
     {
+        if (!$template) {
+            /** @var ReflectionClass $ref */
+            $ref = new ReflectionClass(static::class);
+
+            /** @var string $template */
+            $template = strtolower("{$ref->getShortName()}/{$this->action}");
+        }
+
         /** @var Slim\Views\PhpRenderer $renderer */
         $renderer = $this->container->get('renderer');
 
         /** @var Psr\Http\Message\ResponseInterface $response */
         $response = $this->container->get('response');
-
-        if (!$template) {
-            /** @var string[] $moduleSpec */
-            $moduleSpec = explode('/', str_replace('.', '/', $this->action));
-
-            // remove the module name
-            array_shift($moduleSpec);
-
-            /** @var string $template */
-            $template = implode('/', $moduleSpec);
-        }
 
         return $renderer->render($response, "{$template}.phtml", $data);
     }
@@ -248,33 +231,20 @@ abstract class Controller
      */
     protected static function route()
     {
-        /** @var Slim\App $app */
-        $app = self::$app;
-
         /** @var string $controller */
-        $controller = strtolower(str_replace(['\\'], ['/'], static::class));
-
-        /** @var string $module */
-        $module = str_replace(['modules/', '/'], ['', '.'], $controller);
+        $controller = strtolower(str_replace('\\', '/', static::class));
 
         /** @var string $endpoint */
         $endpoint = trim(static::ENDPOINT ?: $controller, '/');
-        $endpoint = preg_replace('@.+modules?/@', '', $endpoint);
 
         foreach (static::ROUTES as $mapping) {
-            /** @var array $methods */
-            $methods = $mapping['methods'];
-
             /** @var string $route */
-            $route = rtrim("/{$endpoint}{$mapping['route']}", '/') ?: '/';
-            $route = preg_replace('@/+@', '/', $route);
+            $route = trim("{$endpoint}{$mapping['route']}", '/');
 
-            /** @var Slim\Route $mapper */
-            $mapper = $app->map($methods, $route, static::class);
-
-            if (isset($mapping['action'])) {
-                $mapper->setName("{$module}.{$mapping['action']}");
-            }
+            /* @var Slim\Route $mapper */
+            self::$app
+                ->map($mapping['methods'], "/{$route}", static::class)
+                ->setName("{$route}/{$mapping['action']}");
         }
     }
 }
