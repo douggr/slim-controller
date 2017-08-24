@@ -26,20 +26,25 @@ abstract class Controller
     /** @var string */
     const ENDPOINT = null;
 
+    /** @var string */
+    const RENDERER_EXTENSION = '.phtml';
+
+    // @codingStandardsIgnoreStart
     /** @var array */
-    const ROUTES = [ // @codingStandardsIgnoreStart
-        // because {id} is added later, any static route MUST be placed
-        // before routes with arguments
+    const ROUTES = [
+        // because {id} is added later, any static route MUST be
+        // placed before routes with arguments
         ['action' => 'create',  'methods' => ['post'],         'route' => '/'],
         ['action' => 'index',   'methods' => ['get'],          'route' => '/'],
         ['action' => 'new',     'methods' => ['get'],          'route' => '/new'],
 
-        // and finally we define routes with arguments
-        ['action' => 'edit',    'methods' => ['get'],          'route' => '/{id}/edit'],
+        // and then define dynamic routes
         ['action' => 'destroy', 'methods' => ['delete'],       'route' => '/{id}'],
+        ['action' => 'edit',    'methods' => ['get'],          'route' => '/{id}/edit'],
         ['action' => 'get',     'methods' => ['get'],          'route' => '/{id}'],
         ['action' => 'update',  'methods' => ['patch', 'put'], 'route' => '/{id}'],
-    ]; // @codingStandardsIgnoreEnd
+    ];
+    // @codingStandardsIgnoreEnd
 
     /**
      * @var string
@@ -110,32 +115,32 @@ abstract class Controller
      * Configure a Slim\App to use within this controller.
      *
      * @param array $config an associative array of app settings as follow:
-     *      - addContentLengthHeader: When true, Slim will add a
-     *          Content-Length header to the response. If you are using a
-     *          runtime analytics tool, such as New Relic, then this
-     *          should be disabled.
-     *      - bootstrap: A file to load right after the App is instantiated
-     *      - determineRouteBeforeAppMiddleware: When true, the route is
-     *          calculated before any middleware is executed. This means
-     *          that you can inspect route parameters in middleware if you
-     *          need to.
-     *      - displayErrorDetails: When true, additional information about
-     *          exceptions are displayed by the default error handler.
-     *      - httpVersion: The protocol version used by the Response object.
-     *      - responseChunkSize: Size of each chunk read from the `Response`
-     *          body when sending to the browser.
-     *      - outputBuffering: If false, then no output buffering is
-     *          enabled. If 'append' or 'prepend', then any echo or print
-     *          statements are captured and are either appended or prepended
-     *          to the Response returned from the route callable.
-     *      - routerCacheFile: Filename for caching the FastRoute routes.
-     *          Must be set to to a valid filename within a writeable
-     *          directory. If the file does not exist, then it is
-     *          created with the correct cache information on first run.
+     *  - addContentLengthHeader: When true, Slim will add a
+     *      Content-Length header to the response. If you are using a
+     *      runtime analytics tool, such as New Relic, then this
+     *      should be disabled.
+     *  - bootstrap: A file to load right after the App is instantiated
+     *  - determineRouteBeforeAppMiddleware: When true, the route is
+     *      calculated before any middleware is executed. This means
+     *      that you can inspect route parameters in middleware if you
+     *      need to.
+     *  - displayErrorDetails: When true, additional information about
+     *      exceptions are displayed by the default error handler.
+     *  - httpVersion: The protocol version used by the Response object.
+     *  - responseChunkSize: Size of each chunk read from the `Response`
+     *      body when sending to the browser.
+     *  - outputBuffering: If false, then no output buffering is
+     *      enabled. If 'append' or 'prepend', then any echo or print
+     *      statements are captured and are either appended or prepended
+     *      to the Response returned from the route callable.
+     *  - routerCacheFile: Filename for caching the FastRoute routes.
+     *      Must be set to to a valid filename within a writeable
+     *      directory. If the file does not exist, then it is
+     *      created with the correct cache information on first run.
      *
      * @return Slim\App
      */
-    public static function bootstrap(array $config = [])
+    public static function bootstrap(array $config = []): App
     {
         if (self::$app) {
             return self::$app;
@@ -160,7 +165,7 @@ abstract class Controller
      *
      * @param string[] $controller controllers to map
      */
-    public static function map(...$controller)
+    public static function map(string ...$controller)
     {
         if (!self::$app) {
             throw new RuntimeException(
@@ -178,7 +183,7 @@ abstract class Controller
      *
      * @return Slim\App
      */
-    protected function app()
+    protected function app(): App
     {
         return self::$app;
     }
@@ -199,22 +204,25 @@ abstract class Controller
      * ResponseInterface.
      *
      * @param array $data associative array of template variables
-     * @param string $template template pathname relative to
-     *      templates directory
+     * @param string $template template name. Relative to the
+     *      templates directory (without file extension)
      *
      * @throws Slim\Exception\ContainerValueNotFoundException if the
      *      renderer is not defined
      *
      * @return Psr\Http\Message\ResponseInterface
      */
-    protected function render(array $data = [], $template = '')
+    protected function render(array $data = [], string $template = ''): ResponseInterface
     {
         if (!$template) {
-            /** @var ReflectionClass $ref */
-            $ref = new ReflectionClass(static::class);
+            /** @var ReflectionClass $reflection */
+            $reflection = new ReflectionClass(static::class);
+
+            /** @var string $path */
+            $path = $reflection->getShortName();
 
             /** @var string $template */
-            $template = strtolower("{$ref->getShortName()}/{$this->action}");
+            $template = strtolower("{$path}/{$this->action}");
         }
 
         /** @var Slim\Views\PhpRenderer $renderer */
@@ -223,7 +231,10 @@ abstract class Controller
         /** @var Psr\Http\Message\ResponseInterface $response */
         $response = $this->container->get('response');
 
-        return $renderer->render($response, "{$template}.phtml", $data);
+        /* @var string $template */
+        $template .= static::RENDERER_EXTENSION;
+
+        return $renderer->render($response, $template, $data);
     }
 
     /**
@@ -241,7 +252,6 @@ abstract class Controller
             /** @var string $route */
             $route = trim("{$endpoint}{$mapping['route']}", '/');
 
-            /* @var Slim\Route $mapper */
             self::$app
                 ->map($mapping['methods'], "/{$route}", static::class)
                 ->setName("{$route}/{$mapping['action']}");
